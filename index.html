@@ -84,12 +84,22 @@
             margin-right: 10px;
         }
     </style>
+        <script>
+        $(document).ready(function hey() {
+            fetch("http://spartacodingclub.shop/sparta_api/weather/tokyo").then(res => res.json()).then(data => {
+                // console.log(data)
+                let number = data['temp']
+                $('#temp').text(number)
+            })
+        })
+    </script>
 </head>
 
 <body>
     <div class="mytitle">
         <h1>ここで変更できます。</h1>
-        <button>映画記録</button>
+        <div>今の気温 : <span id="temp">${number}</span>度</div>
+        <button onclick="hey()">映画記録</button>
     </div>
     <div class="mypost">
         <div class="form-floating mb-3">
