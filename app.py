@@ -1,19 +1,49 @@
-import requests
 from bs4 import BeautifulSoup
-
+import requests
 from pymongo import MongoClient
-client = MongoClient('mongodb+srv://intaegi111:test@cluster0.lh44oge.mongodb.net/?retryWrites=true&w=majority')
+from flask import Flask, render_template, request, jsonify
+app = Flask(__name__)
+
+client = MongoClient('自分の mongoDB URL')
 db = client.dbsparta
 
-URL = "https://www.billboard-japan.com/charts/detail?a=hot100"
-headers = {'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36'}
-data = requests.get(URL, headers=headers)
-soup = BeautifulSoup(data.text, 'html.parser')
+@app.route('/')
+def home():
+    return render_template('index.html')
 
-musics = soup.select('#content2 > div > div.leftBox > table > tbody > tr')
+@app.route("/movie", methods=["POST"])
+def movie_post():
+    url_receive = request.form['url_give']
+    comment_receive = request.form['comment_give']
+    star_receive = request.form['star_give']
 
-for m in musics:
-    rank = m.select_one('td > span').text
-    title = m.select_one('p.musuc_title').text.strip()
-    artist = m.select_one('p.artist_name').text.strip()
-    print(rank, title, artist)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36'}
+    data = requests.get(url_receive, headers=headers)
+
+    soup = BeautifulSoup(data.text, 'html.parser')
+
+    ogimage = soup.select_one('meta[property="og:image"]')['content']
+    ogtitle = soup.select_one('meta[property="og:title"]')['content'].split(':')[0]
+    ogdesc = soup.select_one('meta[property="og:description"]')['content']
+
+
+    doc = {
+        'title':ogtitle,
+        'desc':ogdesc,
+				'image':ogimage,
+				'star':star_receive,
+        'comment':comment_receive
+    }
+
+    db.movies.insert_one(doc)
+
+    return jsonify({'msg':'保存完了!'})
+
+@app.route("/movie", methods=["GET"])
+def movie_get():
+    all_movies = list(db.movies.find({},{'_id':False}))
+    return jsonify({'result':all_movies})
+
+if __name__ == '__main__':
+    app.run('0.0.0.0', port=5000, debug=True)
